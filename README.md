@@ -20,6 +20,6 @@ A complete FinTech-style microservice architecture built with Spring Boot.
 - Docker
 
 ### Run Order
-1️⃣ Start `service-registry`  
-2️⃣ Start `api-gateway`  
-3️⃣ Start other services (`user`, `account`, etc.)
+1. Start `service-registry`  
+2. Start `api-gateway`  
+3. Start other services (`user`, `account`, etc.)
