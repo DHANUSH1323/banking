@@ -1,0 +1,12 @@
+# Ignore build and IDE files
+target/
+.idea/
+*.iml
+*.class
+*.jar
+*.war
+*.log
+.DS_Store
+
+# Ignore Maven Wrapper files
+.mvn/
