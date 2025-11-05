@@ -1,3 +1,31 @@
 spring:
   application:
     name: User Service
+    bad_request: 400
+    conflict: 409
+    success: 200
+    not_found: 404
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB_NAME:user_service}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+
+app:
+  config:
+    keycloak:
+      server-url: http://localhost:8571
+      realm: banking-service
+      client-id: banking-service-api-client
+      client-secret: 932OFITe8vtH4z0G9gem4Afd69JhbwrI
+
+server:
+  port: 8082

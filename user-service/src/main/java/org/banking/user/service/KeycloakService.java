@@ -3,7 +3,7 @@ package org.banking.user.service;
 import org.keycloak.representations.idm.UserRepresentation;
 import java.util.List;
 
-public class KeycloakService {
+public interface KeycloakService {
     Integer createUser(UserRepresentation userRepresentation);
 
     List<UserRepresentation> readUserByEmail(String emailId);

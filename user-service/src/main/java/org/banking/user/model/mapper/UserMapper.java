@@ -10,24 +10,27 @@ import java.util.Objects;
 public class UserMapper extends BaseMapper<User, UserDto> {
 
     @Override
-    public User ConvertToEntity(UserDto dto, Object... args){
+    public User convertToEntity(UserDto dto, Object... args) {
+
         User user = new User();
-        if(!Objects.isNull(dto)){
+        if (!Objects.isNull(dto)) {
             BeanUtils.copyProperties(dto, user);
-            if(!Objects.isNull(dto.getUserProfileDto())){
+            if (!Objects.isNull(dto.getUserProfileDto())) {
                 UserProfile userProfile = new UserProfile();
                 BeanUtils.copyProperties(dto.getUserProfileDto(), userProfile);
+                user.setUserProfile(userProfile);
             }
         }
         return user;
     }
 
     @Override
-    public UserDto ConvertToDto(User entity, Object... args){
+    public UserDto convertToDto(User entity, Object... args) {
+
         UserDto userDto = new UserDto();
-        if(!Objects.isNull(entity)){
+        if (!Objects.isNull(entity)) {
             BeanUtils.copyProperties(entity, userDto);
-            if(!Objects.isNull(entity.getUserProfile())){
+            if (!Objects.isNull(entity.getUserProfile())) {
                 UserProfileDto userProfileDto = new UserProfileDto();
                 BeanUtils.copyProperties(entity.getUserProfile(), userProfileDto);
                 userDto.setUserProfileDto(userProfileDto);
@@ -35,5 +38,4 @@ public class UserMapper extends BaseMapper<User, UserDto> {
         }
         return userDto;
     }
-
 }
