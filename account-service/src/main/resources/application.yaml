@@ -1,3 +1,23 @@
 spring:
   application:
     name: Account Service
+    bad_request: 400
+    conflict: 409
+    ok: 200
+    not_found: 404
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/account_service
+    username: root
+    password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8081
