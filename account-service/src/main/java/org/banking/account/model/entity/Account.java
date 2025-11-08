@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 
 import org.banking.account.model.AccountType;
@@ -29,7 +28,7 @@ public class Account {
     private String accountNumber;
 
     @Enumerated(EnumType.STRING)
-    private AccountType accounttype;
+    private AccountType accountType;
 
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
@@ -37,8 +36,7 @@ public class Account {
     @CreationTimestamp
     private LocalDate openingDate;
 
-    private BigDecimal accountBalance;
+    private BigDecimal availableBalance;
 
-    private Long userId;
-    
+    private Long userId;    
 }
