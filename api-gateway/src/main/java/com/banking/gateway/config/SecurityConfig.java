@@ -15,7 +15,6 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
 
         http
-                // ✅ Use lambda-based configuration instead of deprecated chaining
                 .authorizeExchange(exchange -> exchange
                 .pathMatchers("/api/users/register").permitAll()
                 .anyExchange().authenticated()
