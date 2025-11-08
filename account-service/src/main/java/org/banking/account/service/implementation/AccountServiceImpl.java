@@ -8,9 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.banking.account.exception.*;
-// import org.banking.account.external.SequenceService;
-// import org.banking.account.external.TransactionService;
-// import org.banking.account.external.UserService;
+import org.banking.account.external.SequenceService;
+import org.banking.account.external.TransactionService;
+import org.banking.account.external.UserService;
 import org.banking.account.model.AccountStatus;
 import org.banking.account.model.AccountType;
 import org.banking.account.model.dto.AccountDto;
@@ -34,6 +34,9 @@ import static org.banking.account.model.Constants.ACC_PREFIX;
 @Slf4j
 public class AccountServiceImpl implements AccountService{
 
+    private final UserService userService;
+    private final SequenceService sequenceService;
+    private final TransactionService transactionService;
     private final AccountRepository accountRepository;
 
     private final AccountMapper accountMapper = new AccountMapper();
