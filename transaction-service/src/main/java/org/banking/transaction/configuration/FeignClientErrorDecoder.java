@@ -1,27 +1,22 @@
 package org.banking.transaction.configuration;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.Response;
-import feign.codec.ErrorDecoder;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.banking.transaction.exception.GlobalException;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.IOUtils;
+import org.banking.transaction.exception.GlobalException;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import feign.Response;
+import feign.codec.ErrorDecoder;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 public class FeignClientErrorDecoder implements ErrorDecoder {
 
-    /**
-     * Decodes the response and returns an Exception based on the status code.
-     *
-     * @param s The string representation of the response.
-     * @param response The HTTP response.
-     * @return An Exception based on the status code.
-     */
     @Override
     public Exception decode(String s, Response response) {
 
@@ -37,12 +32,6 @@ public class FeignClientErrorDecoder implements ErrorDecoder {
         }
     }
 
-    /**
-     * Extracts a GlobalException object from the response body.
-     *
-     * @param response the response object
-     * @return the GlobalException object extracted from the response body
-     */
     private GlobalException extractGlobalException(Response response) {
 
         GlobalException globalException = null;
