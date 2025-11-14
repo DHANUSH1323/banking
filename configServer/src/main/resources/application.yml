@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: configServer
+server:
+  port: 8888
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/DHANUSH1323/banking-config.git
+          default-label: main
+          clone-on-start: true
