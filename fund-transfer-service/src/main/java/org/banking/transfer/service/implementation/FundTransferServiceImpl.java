@@ -5,6 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+
 import org.banking.transfer.exception.AccountUpdateException;
 import org.banking.transfer.exception.GlobalErrorCode;
 import org.banking.transfer.exception.InsufficientBalance;
@@ -43,6 +48,9 @@ public class FundTransferServiceImpl implements FundTransferService {
     private final FundTransferMapper fundTransferMapper = new FundTransferMapper();
 
     @Override
+    @CircuitBreaker(name = "accountService", fallbackMethod = "accountFallback")
+    @Retry(name = "accountService")
+    @RateLimiter(name = "accountService")
     public FundTransferResponse fundTransfer(FundTransferRequest fundTransferRequest) {
 
         Account fromAccount;
@@ -82,6 +90,9 @@ public class FundTransferServiceImpl implements FundTransferService {
                 .message("Fund transfer was successful").build();
     }
 
+    @CircuitBreaker(name = "transactionService", fallbackMethod = "transactionFallback")
+    @Retry(name = "transactionService")
+    @RateLimiter(name = "transactionService")
     private String internalTransfer(Account fromAccount, Account toAccount, BigDecimal amount) {
 
         fromAccount.setAvailableBalance(fromAccount.getAvailableBalance().subtract(amount));
@@ -120,5 +131,19 @@ public class FundTransferServiceImpl implements FundTransferService {
     public List<FundTransferDto> getAllTransfersByAccountId(String accountId) {
 
         return fundTransferMapper.convertToDtoList(fundTransferRepository.findFundTransferByFromAccount(accountId));
+    }
+
+    public FundTransferResponse accountFallback(FundTransferRequest request, Throwable ex) {
+        log.error("Fallback triggered for fundTransfer. Reason = {}", ex.toString());
+    
+        return FundTransferResponse.builder()
+                .transactionId(null)
+                .message("Account service unavailable right now. Please retry later.")
+                .build();
+    }
+
+    public String transactionFallback(Account fromAccount, Account toAccount, BigDecimal amount, Throwable ex) {
+        log.error("Fallback triggered for TRANSACTION service call. Reason = {}", ex.toString());
+        throw new RuntimeException("Transaction service unavailable. Transfer rolled back.");
     }
 }
