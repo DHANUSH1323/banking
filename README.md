@@ -16,6 +16,7 @@ A complete FinTech-style microservice architecture built with Spring Boot.
 - Spring Boot 3.5.x
 - Spring Cloud (Eureka, Gateway, Feign)
 - Kafka
+- Redis
 - MySQL
 - Docker
 
