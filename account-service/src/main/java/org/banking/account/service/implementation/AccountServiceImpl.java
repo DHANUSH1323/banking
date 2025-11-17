@@ -25,9 +25,12 @@ import org.banking.account.service.AccountService;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 
 import static org.banking.account.model.Constants.ACC_PREFIX;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 
 @Service
 @RequiredArgsConstructor
@@ -47,26 +50,60 @@ public class AccountServiceImpl implements AccountService{
     @Override
     public Response createAccount(AccountDto accountDto){
 
-        ResponseEntity<UserDto> user = userService.readUserById(accountDto.getUserId());
-        if(Objects.isNull(user.getBody())){
+        UserDto user = getUserByIdWithResilience(accountDto.getUserId());
+        if (user == null) {
             throw new ResourceNotFound("User not found on server");
         }
 
-        accountRepository.findAccountByUserIdAndAccountType(accountDto.getUserId(), AccountType.valueOf(accountDto.getAccountType()))
-                .ifPresent(account -> {
-                    log.error("Account already exist on the server");
-                    throw new ResourceConflict("Account already exist on the server");
-                });
-        
+        accountRepository.findAccountByUserIdAndAccountType(
+                accountDto.getUserId(),
+                AccountType.valueOf(accountDto.getAccountType())
+        ).ifPresent(account -> {
+            throw new ResourceConflict("Account already exist on the server");
+        });
+
         Account account = accountMapper.convertToEntity(accountDto);
-        account.setAccountNumber(ACC_PREFIX + String.format("%07d",sequenceService.generateAccountNumber().getAccountNumber()));
+
+        Long nextSeq = getNextSequenceWithResilience(); 
+        account.setAccountNumber(
+                ACC_PREFIX + String.format("%07d", nextSeq)
+        );
+
         account.setAccountStatus(AccountStatus.PENDING);
-        account.setAvailableBalance(BigDecimal.valueOf(0));
+        account.setAvailableBalance(BigDecimal.ZERO);
         account.setAccountType(AccountType.valueOf(accountDto.getAccountType()));
+
         accountRepository.save(account);
+
         return Response.builder()
                 .responseCode(success)
-                .message(" Account created successfully").build();
+                .message("Account created successfully")
+                .build();
+    }
+
+    @CircuitBreaker(name = "userService", fallbackMethod = "userFallback")
+    @Retry(name = "userService")
+    @RateLimiter(name = "userService")
+    public UserDto getUserByIdWithResilience(Long userId) {
+        ResponseEntity<UserDto> response = userService.readUserById(userId);
+        return response.getBody();
+    }
+
+    public UserDto userFallback(Long userId, Throwable ex) {
+        log.error("User-service fallback triggered. Reason = {}", ex.toString());
+        return null;
+    }
+
+    @CircuitBreaker(name = "sequenceService", fallbackMethod = "sequenceFallback")
+    @Retry(name = "sequenceService")
+    @RateLimiter(name = "sequenceService")
+    public Long getNextSequenceWithResilience() {
+        return sequenceService.generateAccountNumber().getAccountNumber();
+    }
+
+    public Long sequenceFallback(Throwable ex) {
+        log.error("Sequence-service fallback triggered. Reason = {}", ex.toString());
+        throw new RuntimeException("Sequence Generator unavailable. Cannot create account at the moment.");
     }
 
     
@@ -121,6 +158,9 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
+    @CircuitBreaker(name = "transactionService", fallbackMethod = "transactionFallback")
+    @Retry(name = "transactionService")
+    @RateLimiter(name = "transactionService")
     public List<TransactionResponse> getTransactionsFromAccountId(String accountId) {
 
         return transactionService.getTransactionsFromAccountId(accountId);
@@ -156,6 +196,5 @@ public class AccountServiceImpl implements AccountService{
                     return accountDto;
                 }).orElseThrow(ResourceNotFound::new);
     }
-
     
 }
