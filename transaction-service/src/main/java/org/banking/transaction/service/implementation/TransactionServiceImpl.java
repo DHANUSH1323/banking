@@ -28,6 +28,10 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,23 +48,28 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public Response addTransaction(TransactionDto transactionDto) {
 
-        ResponseEntity<Account> response = accountService.readByAccountNumber(transactionDto.getAccountId());
+        ResponseEntity<Account> response = getAccountWithResilience(transactionDto.getAccountId());
         if (Objects.isNull(response.getBody())) {
             throw new ResourceNotFound("Requested account not found on the server", GlobalErrorCode.NOT_FOUND);
         }
+
         Account account = response.getBody();
         Transaction transaction = transactionMapper.convertToEntity(transactionDto);
+
         if (transactionDto.getTransactionType().equals(TransactionType.DEPOSIT.toString())) {
+
             account.setAvailableBalance(account.getAvailableBalance().add(transactionDto.getAmount()));
+
         } else if (transactionDto.getTransactionType().equals(TransactionType.WITHDRAWAL.toString())) {
+
             if (!account.getAccountStatus().equals("ACTIVE")) {
-                log.error("account is either inactive/closed, cannot process the transaction");
                 throw new AccountStatusException("account is inactive or closed");
             }
+
             if (account.getAvailableBalance().compareTo(transactionDto.getAmount()) < 0) {
-                log.error("insufficient balance in the account");
                 throw new InsufficientBalance("Insufficient balance in the account");
             }
+
             transaction.setAmount(transactionDto.getAmount().negate());
             account.setAvailableBalance(account.getAvailableBalance().subtract(transactionDto.getAmount()));
         }
@@ -70,12 +79,14 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setStatus(TransactionStatus.COMPLETED);
         transaction.setReferenceId(UUID.randomUUID().toString());
 
-        accountService.updateAccount(transactionDto.getAccountId(), account);
+        updateAccountWithResilience(transactionDto.getAccountId(), account);
+
         transactionRepository.save(transaction);
 
         return Response.builder()
                 .message("Transaction completed successfully")
-                .responseCode(ok).build();
+                .responseCode(ok)
+                .build();
     }
 
     @Override
@@ -122,5 +133,30 @@ public class TransactionServiceImpl implements TransactionService {
                     transactionRequest.setTransactionType(transaction.getTransactionType().toString());
                     return transactionRequest;
                 }).collect(Collectors.toList());
+    }
+
+    @CircuitBreaker(name = "accountService", fallbackMethod = "accountServiceReadFallback")
+    @Retry(name = "accountService")
+    @RateLimiter(name = "accountService")
+    public ResponseEntity<Account> getAccountWithResilience(String accountId) {
+        return accountService.readByAccountNumber(accountId);
+    }
+
+    public ResponseEntity<Account> accountServiceReadFallback(String accountId, Throwable ex) {
+        log.error("Fallback triggered for readByAccountNumber. AccountId = {}, Error = {}", accountId, ex.toString());
+        return ResponseEntity.status(503).body(null);
+    }
+
+
+    @CircuitBreaker(name = "accountService", fallbackMethod = "accountServiceUpdateFallback")
+    @Retry(name = "accountService")
+    @RateLimiter(name = "accountService")
+    public void updateAccountWithResilience(String accountId, Account account) {
+        accountService.updateAccount(accountId, account);
+    }
+
+    public void accountServiceUpdateFallback(String accountId, Account account, Throwable ex) {
+        log.error("Fallback triggered for updateAccount. AccountId = {}, Error = {}", accountId, ex.toString());
+        throw new RuntimeException("Account service unavailable. Cannot update account.");
     }
 }
