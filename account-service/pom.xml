@@ -82,6 +82,12 @@
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-spring-boot3</artifactId>
 		</dependency>
+
+		<!-- Prometheus metrics exporter -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
 		
 	</dependencies>
 	<dependencyManagement>

@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "service-registry"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8761"]
+
+  - job_name: "account-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8081"]
+
+  - job_name: "user-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8082"]
+
+  - job_name: "sequence-generator"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8083"]
+
+  - job_name: "transaction-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8084"]
+
+  - job_name: "fund-transfer-service"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8085"]
+
+  - job_name: "api-gateway"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
