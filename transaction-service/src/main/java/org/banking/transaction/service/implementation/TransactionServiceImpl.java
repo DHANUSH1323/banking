@@ -32,6 +32,10 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,6 +50,10 @@ public class TransactionServiceImpl implements TransactionService {
     private String ok;
 
     @Override
+    @Caching(evict = {
+        @CacheEvict(value = "transactionsByAccount", key = "#transactionDto.accountId"),
+        @CacheEvict(value = "transactionsByReference", allEntries = true)
+    })
     public Response addTransaction(TransactionDto transactionDto) {
 
         ResponseEntity<Account> response = getAccountWithResilience(transactionDto.getAccountId());
@@ -90,6 +98,10 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Caching(evict = {
+        @CacheEvict(value = "transactionsByAccount", allEntries = true),
+        @CacheEvict(value = "transactionsByReference", allEntries = true)
+    })
     public Response internalTransaction(List<TransactionDto> transactionDtos, String transactionReference) {
 
         List<Transaction> transactions = transactionMapper.convertToEntityList(transactionDtos);
@@ -108,6 +120,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Cacheable(value = "transactionsByAccount", key = "#accountId")
     public List<TransactionRequest> getTransaction(String accountId) {
 
         return transactionRepository.findTransactionByAccountId(accountId)
@@ -122,6 +135,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Cacheable(value = "transactionsByReference", key = "#transactionReference")
     public List<TransactionRequest> getTransactionByTransactionReference(String transactionReference) {
 
         return transactionRepository.findTransactionByReferenceId(transactionReference)
