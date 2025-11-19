@@ -6,6 +6,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import org.banking.account.exception.*;
 import org.banking.account.external.SequenceService;
@@ -108,6 +110,7 @@ public class AccountServiceImpl implements AccountService{
 
     
     @Override
+    @CacheEvict(value = "accounts", key = "#accountNumber")
     public Response updateStatus(String accountNumber, AccountStatusUpdate accountUpdate){
         return accountRepository.findAccountByAccountNumber(accountNumber)
                 .map(account -> {
@@ -124,6 +127,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
+    @Cacheable(value = "accounts", key = "#accountNumber", unless = "#result == null or #result.accountStatus.equals('CLOSED')")
     public AccountDto readAccountByAccountNumber(String accountNumber) {
 
         return accountRepository.findAccountByAccountNumber(accountNumber)
@@ -137,6 +141,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
+    @CacheEvict(value = "accounts", key = "#accountNumber")
     public Response updateAccount(String accountNumber, AccountDto accountDto) {
 
         return accountRepository.findAccountByAccountNumber(accountDto.getAccountNumber())
@@ -167,6 +172,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
+    @CacheEvict(value = "accounts", key = "#accountNumber")
     public Response closeAccount(String accountNumber) {
 
         return accountRepository.findAccountByAccountNumber(accountNumber)
