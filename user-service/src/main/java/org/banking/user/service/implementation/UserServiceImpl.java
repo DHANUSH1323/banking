@@ -6,6 +6,8 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.banking.user.exception.EmptyFields;
@@ -35,6 +37,9 @@ import java.util.stream.Collectors;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 @Slf4j
 @Service
@@ -119,6 +124,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "usersByAuth", key = "#authId")
     public UserDto readUser(String authId) {
 
         User user = userRepository.findUserByAuthId(authId).
@@ -131,6 +137,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Caching(evict = {
+        @CacheEvict(value = "users", key = "#id"),
+        @CacheEvict(value = "usersByAuth", allEntries = true)
+    })
     public Response updateUserStatus(Long id, UserUpdateStatus userUpdate) {
 
         User user = userRepository.findById(id).orElseThrow(
@@ -157,6 +167,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Cacheable(value = "users", key = "#userId")
     public UserDto readUserById(Long userId) {
 
         return userRepository.findById(userId)
@@ -165,6 +176,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Caching(evict = {
+    @CacheEvict(value = "users", key = "#id"),
+    @CacheEvict(value = "usersByAuth", allEntries = true)
+})
     public Response updateUser(Long id, UserUpdate userUpdate) {
 
         User user = userRepository.findById(id)
